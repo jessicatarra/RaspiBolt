@@ -132,27 +132,31 @@ if [ -n ${btc_path} ]; then
   fi
 fi
 
-# get public IP address & port
-public_ip=$(curl -s ipinfo.io/ip)
+# get public IP onion address & port
+public_ip=$(
+    bitcoin-cli -datadir=${bitcoin_dir} getnetworkinfo | jq -r '.localaddresses[].address'
+)
 public_port=$(cat ${bitcoin_dir}/bitcoin.conf 2>/dev/null | grep ^port= | awk -F"=" '{print $2}')
 if [ "${public_port}" = "" ]; then
-  if [ $chain  = "test" ]; then
-    public_port=18333
-  else
-    public_port=8333
-  fi
+    if [ $chain = "test" ]; then
+        public_port=18333
+    else
+        public_port=8333
+    fi
 fi
 
-#Choose the top two lines if you experience 'not reachable' while blockchain syncs. Could be due to nat-loopback being not available. 
-#public_check=$(curl -s https://bitnodes.io/api/v1/nodes/me-${public_port}/ | jq .success)
-#if [ $public_check = "true" ]; then
-public_check=$(timeout 2s nc -z ${public_ip} ${public_port}; echo $?)
-if [ $public_check = "0" ]; then
-  public="Yes"
-  public_color="${color_green}"
+#Call for bitnode api in order to get public status using onion ip and public port
+public_check=$(curl -s https://bitnodes.io/api/v1/nodes/${public_ip}-${public_port}/ | jq .status)
+if [ $public_check = "UP" ]; then
+    public="Yes"
+    public_color="${color_green}"
+elif [ $public_check = "PENDING" ]; then
+    public="Pending"
+    public_color="${color_grey}"
 else
-  public="Not reachable"
-  public_color="${color_red}"
+    [ $public_check = "DOWN" ]
+    public="Not reachable"
+    public_color="${color_red}"
 fi
 public_addr="${public_ip}:${public_port}"
 
