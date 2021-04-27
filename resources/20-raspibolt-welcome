@@ -134,8 +134,7 @@ fi
 
 # get public IP onion address & port
 public_ip=$(
-    bitcoin-cli -datadir=${bitcoin_dir} getnetworkinfo | jq -r '.localaddresses[].address'
-)
+bitcoin-cli -datadir=${bitcoin_dir} getnetworkinfo | jq -r '.localaddresses[].address')
 public_port=$(cat ${bitcoin_dir}/bitcoin.conf 2>/dev/null | grep ^port= | awk -F"=" '{print $2}')
 if [ "${public_port}" = "" ]; then
     if [ $chain = "test" ]; then
@@ -146,17 +145,13 @@ if [ "${public_port}" = "" ]; then
 fi
 
 #Call for bitnode api in order to get public status using onion ip and public port
-public_check=$(curl -s https://bitnodes.io/api/v1/nodes/${public_ip}-${public_port}/ | jq .status)
+public_check=$(curl -s https://bitnodes.io/api/v1/nodes/${public_ip}-${public_port}/ | jq -r '.status')
 if [ $public_check = "UP" ]; then
-    public="Yes"
-    public_color="${color_green}"
-elif [ $public_check = "PENDING" ]; then
-    public="Pending"
-    public_color="${color_grey}"
+  public="Yes"
+  public_color="${color_green}"
 else
-    [ $public_check = "DOWN" ]
-    public="Not reachable"
-    public_color="${color_red}"
+  public="Not reachable"
+  public_color="${color_red}"
 fi
 public_addr="${public_ip}:${public_port}"
 
@@ -410,3 +405,4 @@ ${color_grey}%s
 "${electrsversion}" "${btcrpcexplorerversion}" \
 "${ln_connect_guidance}"
 echo "$(tput -T xterm sgr0)"
+
